@@ -66,8 +66,34 @@ function parseCSV(text){
 function number(v){let s=String(v??'').trim();if(s.includes(',')&&s.includes('.'))s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replaceAll('.','').replace(',','.'):s.replaceAll(',','');else s=s.replace(',','.');return s?Number(s):NaN}
 function group(rows,key){const m=new Map();rows.forEach(r=>m.set(r[key],(m.get(r[key])||0)+r.value));return [...m].map(([name,value])=>({name,value})).sort((a,b)=>b.value-a.value)}
 function type(t){return ETF.has(t)?'ETF':ARG.has(t)?'Acción AR':BONDS.has(t)?'Bono':CRYPTO.has(t)?'Cripto':t==='CASH'?'Cash':'Cedear'}
-function region(t){if(ARG.has(t)||BONDS.has(t))return 'Argentina';if(CRYPTO.has(t))return 'Cripto global';if(t==='CASH')return 'Cash';if(t==='FXI')return 'China';if(t==='EWZ')return 'Latam ex-Argentina';if(t==='ACWI')return 'Global diversificado';if(t==='VEA')return 'Desarrollados ex-US';if(t==='EEM')return 'Emergentes diversificados';if(t==='GLD')return 'Oro global';return 'Estados Unidos / otros'}
-function sector(t){if(CRYPTO.has(t))return 'Cripto';if(BONDS.has(t))return 'Bonos';if(t==='CASH')return 'Cash';if(t==='GLD')return 'Oro';if(ETF.has(t))return 'ETF diversificados';if(['AAPL','AMD','AVGO','GOOGL','MSFT','NVDA','LRCX'].includes(t))return 'Tecnología';if(['GGAL','BBAR','BMA','SUPV','BHIP'].includes(t))return 'Bancos';return 'Otros'}
+const ETF_REGIONS={SPY:'Estados Unidos',QQQ:'Estados Unidos',XLV:'Estados Unidos',ACWI:'Global diversificado',FXI:'China',VEA:'Desarrollados ex-US',EEM:'Emergentes diversificados',EWZ:'Latam ex-Argentina',GLD:'Oro global'};
+const OTHER_REGIONS={MELI:'Latam ex-Argentina',PBR:'Latam ex-Argentina',NU:'Latam ex-Argentina',GLOB:'Global diversificado',VIST:'Argentina',LAC:'Latam ex-Argentina',LAR:'Latam ex-Argentina'};
+const SECTORS={
+ 'Energía':'YPFD PAMP CEPU TGSU2 VIST PBR',
+ 'Bancos':'GGAL BBAR BMA SUPV BHIP',
+ 'Tecnología':'AAPL AMD AVGO GOOGL MSFT NVDA LRCX GLOB',
+ 'Consumo':'AMZN DISN HD KO MCD MELI NKE PEP WMT',
+ 'Financiero':'BRKB JPM NU V',
+ 'Salud':'JNJ LLY PFE',
+ 'Comunicaciones':'META T',
+ 'Industria y materiales':'ALUA COME CRES TXAR LAC LAR',
+ 'Otros':'TSLA'
+};
+const SECTOR_BY_TICKER=Object.fromEntries(Object.entries(SECTORS).flatMap(([k,v])=>v.split(' ').map(t=>[t,k])));
+function region(t){
+ if(ARG.has(t)||BONDS.has(t))return 'Argentina';
+ if(CRYPTO.has(t))return 'Cripto global';
+ if(t==='CASH')return 'Cash';
+ return ETF_REGIONS[t]||OTHER_REGIONS[t]||'Estados Unidos';
+}
+function sector(t){
+ if(CRYPTO.has(t))return 'Cripto';
+ if(BONDS.has(t))return 'Bonos soberanos';
+ if(t==='CASH')return 'Cash';
+ if(t==='GLD')return 'Oro';
+ if(ETF.has(t))return 'ETF diversificados';
+ return SECTOR_BY_TICKER[t]||'Otros';
+}
 function validate(raw){
  const required=['Ticker','Cantidad total','Precio USD indicativo','Valor USD indicativo',...ACCOUNTS];
  if(!raw.length||required.some(k=>!(k in raw[0])))throw Error('Inventario DEMO sin columnas requeridas');
