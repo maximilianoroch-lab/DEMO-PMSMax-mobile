@@ -31,7 +31,7 @@ a{color:#8fcfff}#status{font-size:12px}.pill{font-size:10px;border:1px solid var
 <section class="page" id="diversificacion"><h2>Exposición directa</h2><small>Los ETF se muestran como instrumentos completos; no se asignan componentes internos sin datos respaldados.</small><div class="grid"><div class="card" id="regions"></div><div class="card" id="sectors"></div></div></section>
 <section class="page" id="custodia"><h2>Distribución por custodio</h2><div class="card" id="custodians"></div></section>
 <section class="page" id="posiciones"><h2>Posiciones por instrumento</h2><div class="filters"><select id="typeFilter"><option value="">Todos los tipos</option></select><select id="accountFilter"><option value="">Todas las cuentas</option></select></div><div class="card scroll" id="positionTable"></div></section>
-<section class="page" id="evolucion"><h2>Evolución observada</h2><div class="card" id="historyBox"><p class="muted">Sin historial verificado cargado.</p></div><small>Los snapshots representan patrimonio observado, no rentabilidad. Nunca se crean cierres artificiales.</small></section>
+<section class="page" id="evolucion"><h2>Evolución observada</h2><div class="filters"><select id="historyPeriod" aria-label="Período observado"><option value="0">Todo</option><option value="31">1 mes</option><option value="92">3 meses</option><option value="183">6 meses</option><option value="366">1 año</option><option value="1096">3 años</option><option value="1827">5 años</option></select></div><div class="card" id="historyBox"><p class="muted">Sin historial verificado cargado.</p></div><small>Los snapshots representan patrimonio observado, no rentabilidad. Nunca se crean cierres artificiales.</small></section>
 <section class="page" id="herramientas"><h2>Herramientas</h2><div class="card"><h3>Asesor IA · Comparar · Simulador</h3><p>El escritorio DEMO incluye análisis técnico, comparación fundamental y simulación de operaciones. Se abre sin utilizar datos de Bersoch.</p><a class="action" href="https://demo-pms-max-mxqteogjttzuufoah5nwnj.streamlit.app/" target="_blank" rel="noopener noreferrer">Abrir herramientas de DEMO</a></div><div class="card"><h3>Fuente de datos</h3><p>Base DEMO PMS Max · DEMO_INVENTARIO_V5 · 65 instrumentos esperados · 8 custodios ficticios.</p></div></section>
 </main>
 <nav id="nav"><button class="active" data-page="resumen">Resumen</button><button data-page="diversificacion">Exposición</button><button data-page="custodia">Custodia</button><button data-page="posiciones">Posiciones</button><button data-page="evolucion">Evolución</button><button data-page="herramientas">Herramientas</button></nav>
@@ -50,7 +50,7 @@ const fmt=new Intl.NumberFormat('es-AR',{maximumFractionDigits:0});
 const fmtp=new Intl.NumberFormat('es-AR',{style:'percent',maximumFractionDigits:1,minimumFractionDigits:1});
 const money=n=>'US$ '+fmt.format(n);
 const escapeHTML=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let items=[],total=0;
+let items=[],total=0,history=[];
 function parseCSV(text){
  const rows=[];let row=[],value='',quoted=false;
  for(let i=0;i<text.length;i++){const c=text[i];
@@ -120,7 +120,7 @@ async function load(){const status=document.getElementById('status');status.text
   const url='https://docs.google.com/spreadsheets/d/'+DEMO_SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(DEMO_TAB);
   const response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('La base DEMO no respondió: '+response.status);
   const next=validate(parseCSV(await response.text()));
-  items=next;render();status.textContent='Base DEMO PMS Max · '+new Date().toLocaleString('es-AR')+' · '+items.length+' instrumentos ficticios';
+  items=next;render();loadHistory();status.textContent='Base DEMO PMS Max · '+new Date().toLocaleString('es-AR')+' · '+items.length+' instrumentos ficticios';
  }catch(e){
   items=[];total=0;document.querySelectorAll('#summary,#top,#regions,#sectors,#custodians,#positionTable').forEach(x=>x.textContent='No se muestran datos porque falló la validación de la base DEMO.');
   status.textContent='Inventario DEMO no disponible: '+e.message;
@@ -136,6 +136,26 @@ document.getElementById('voiceSummaryBtn').addEventListener('click',()=>{
  const spoken=voiceSummary(),box=document.getElementById('voiceSummaryText');box.textContent=spoken;box.hidden=false;
  if('speechSynthesis'in window){window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spoken);u.lang='es-AR';u.rate=1.15;window.speechSynthesis.speak(u);}
 });
+function renderHistory(){
+ const box=document.getElementById('historyBox');
+ const period=Number(document.getElementById('historyPeriod').value);
+ const latest=history.length?new Date(history[history.length-1].date+'T12:00:00'):null;
+ const visible=period&&latest?history.filter(r=>(latest-new Date(r.date+'T12:00:00'))/86400000<=period):history;
+ if(!visible.length){box.innerHTML='<p class="muted">Sin cierres independientes verificables para mostrar.</p>';return;}
+ const rows=[...visible].reverse().map((r,i)=>'<tr><td>'+escapeHTML(r.date)+'</td><td class="num">'+money(r.value)+'</td></tr>').join('');
+ box.innerHTML='<h3>Cierres observados · '+visible.length+'</h3><div class="scroll"><table><thead><tr><th>Fecha</th><th class="num">Patrimonio USD</th></tr></thead><tbody>'+rows+'</tbody></table></div><small>Valores ficticios indicativos · no equivalen a rendimiento ni rentabilidad.</small>';
+}
+async function loadHistory(){
+ try{
+  const url='https://raw.githubusercontent.com/maximilianoroch-lab/Demo-PMS-Max/main/data/demo_daily_snapshots.csv';
+  const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('sin snapshots');
+  const rows=parseCSV(await r.text()).map(x=>({date:x.Fecha,value:number(x['Patrimonio USD']),estado:x.Estado}))
+    .filter(x=>/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date)&&Number.isFinite(x.value)&&x.value>0&&x.estado==='INDICATIVO V5');
+  const map=new Map(rows.map(x=>[x.date,x]));history=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
+ }catch(e){history=[]}
+ renderHistory();
+}
+document.getElementById('historyPeriod').addEventListener('change',renderHistory);
 document.getElementById('refresh').addEventListener('click',load);
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 load();
