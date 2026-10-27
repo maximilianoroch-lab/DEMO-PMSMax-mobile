@@ -1,18 +1,16 @@
 const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
-const vm=require('node:vm');
 const html=fs.readFileSync('index.html','utf8');
-const start=html.indexOf('const TICKER_LETTERS=');
-const end=html.indexOf('function stopVoice()',start);
-assert.ok(start>=0&&end>start,'speech formatting code must exist');
-const context={positions:[{Ticker:'GGAL'},{Ticker:'YPFD'},{Ticker:'AAPL'}]};
-vm.createContext(context);
-vm.runInContext(html.slice(start,end),context);
-const speak=s=>vm.runInContext('textForSpeech('+JSON.stringify(s)+')',context);
-test('GGAL is read by letters',()=>assert.equal(speak('GGAL'),'ge. ge. a. ele,'));
-test('YPFD spells out Y as i griega',()=>assert.equal(speak('YPFD'),'i griega. pe. efe. de,'));
-test('ticker within sentence is spoken correctly',()=>assert.equal(speak('Tengo GGAL y YPFD.'),'Tengo ge. ge. a. ele, y i griega. pe. efe. de.'));
-test('does not spell arbitrary uppercase text',()=>assert.equal(speak('Informe USD de GGAL'),'Informe USD de ge. ge. a. ele,'));
-test('does not alter display source',()=>{const t='GGAL';speak(t);assert.equal(t,'GGAL')});
-test('speech rate remains 1.25',()=>assert.match(html,/utter\.rate=1\.25/));
+test('mobile DEMO provides audible summary without real holdings',()=>{
+ assert.match(html,/id="voiceSummaryBtn"/);
+ assert.match(html,/function voiceSummary\(/);
+ assert.match(html,/SpeechSynthesisUtterance/);
+ assert.match(html,/cartera ficticia/);
+});
+test('mobile DEMO never references real source or scaled mode',()=>{
+ assert.ok(!html.includes('18qu9LXo55qQZq4oEAq42u_DKaI7e9lZL_PkfUZiu0T0'));
+ assert.ok(!html.includes('DEMO_MULTIPLIER'));
+ assert.ok(!html.includes('DEMO · x4'));
+ assert.match(html,/DEMO_INVENTARIO_V5/);
+});
