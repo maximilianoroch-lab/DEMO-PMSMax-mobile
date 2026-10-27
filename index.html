@@ -27,7 +27,7 @@ a{color:#8fcfff}#status{font-size:12px}.pill{font-size:10px;border:1px solid var
 <header><button id="refresh" class="refresh">Actualizar</button><h1>DEMO PMS Max <span class="pill">Ficticia</span></h1><small id="status">Conectando con Base DEMO PMS Max…</small></header>
 <main>
 <div class="warning">Cartera exclusivamente ficticia · cotizaciones USD indicativas, no verificadas. Sin escalado ni vínculo con posiciones reales.</div>
-<section class="page active" id="resumen"><div id="summary"></div><h2>Mayores posiciones</h2><div class="card scroll" id="top"></div></section>
+<section class="page active" id="resumen"><button id="voiceSummaryBtn" type="button">Escuchar resumen</button><div class="card" id="voiceSummaryText" hidden aria-live="polite"></div><div id="summary"></div><h2>Mayores posiciones</h2><div class="card scroll" id="top"></div></section>
 <section class="page" id="diversificacion"><h2>Exposición directa</h2><small>Los ETF se muestran como instrumentos completos; no se asignan componentes internos sin datos respaldados.</small><div class="grid"><div class="card" id="regions"></div><div class="card" id="sectors"></div></div></section>
 <section class="page" id="custodia"><h2>Distribución por custodio</h2><div class="card" id="custodians"></div></section>
 <section class="page" id="posiciones"><h2>Posiciones por instrumento</h2><div class="filters"><select id="typeFilter"><option value="">Todos los tipos</option></select><select id="accountFilter"><option value="">Todas las cuentas</option></select></div><div class="card scroll" id="positionTable"></div></section>
@@ -125,6 +125,17 @@ async function load(){const status=document.getElementById('status');status.text
   items=[];total=0;document.querySelectorAll('#summary,#top,#regions,#sectors,#custodians,#positionTable').forEach(x=>x.textContent='No se muestran datos porque falló la validación de la base DEMO.');
   status.textContent='Inventario DEMO no disponible: '+e.message;
  }}
+function voiceSummary(){
+ if(!items.length)return 'El inventario ficticio todavía no está disponible.';
+ const sorted=[...items].sort((a,b)=>b.value-a.value);
+ const top=sorted.slice(0,3).map(x=>x.ticker+', '+fmtp.format(x.value/total)).join('; ');
+ const crypto=items.filter(x=>x.type==='Cripto').reduce((n,x)=>n+x.value,0);
+ return 'DEMO PMS Max, cartera ficticia. El patrimonio indicativo es de '+money(total)+'. Hay '+items.length+' instrumentos. La exposición directa a cripto es '+fmtp.format(crypto/total)+'. Principales posiciones: '+top+'. Los precios son indicativos y no se informa rentabilidad histórica.';
+}
+document.getElementById('voiceSummaryBtn').addEventListener('click',()=>{
+ const spoken=voiceSummary(),box=document.getElementById('voiceSummaryText');box.textContent=spoken;box.hidden=false;
+ if('speechSynthesis'in window){window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spoken);u.lang='es-AR';u.rate=1.15;window.speechSynthesis.speak(u);}
+});
 document.getElementById('refresh').addEventListener('click',load);
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
 load();
