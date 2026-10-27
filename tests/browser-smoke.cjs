@@ -15,6 +15,8 @@ const assert=require('node:assert/strict');
  const displayed=await page.locator('#summary').innerText();
  assert.match(displayed,/65.000/);
  assert.match(displayed,/65/);
+ const classification=await page.evaluate(()=>({fxi:region('FXI'),spy:region('SPY'),ggal:region('GGAL'),meli:region('MELI'),tech:sector('AAPL'),energy:sector('YPFD'),bonds:sector('GD35')}));
+ assert.deepEqual(classification,{fxi:'China',spy:'Estados Unidos',ggal:'Argentina',meli:'Latam ex-Argentina',tech:'Tecnología',energy:'Energía',bonds:'Bonos soberanos'});
  await page.locator('[data-page="diversificacion"]').click();
  assert.equal(await page.locator('#diversificacion.active').count(),1);
  await page.locator('[data-page="posiciones"]').click();
