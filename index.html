@@ -32,7 +32,10 @@ a{color:#8fcfff}#status{font-size:12px}.pill{font-size:10px;border:1px solid var
 <section class="page" id="custodia"><h2>Distribución por custodio</h2><div class="card" id="custodians"></div></section>
 <section class="page" id="posiciones"><h2>Posiciones por instrumento</h2><div class="filters"><select id="typeFilter"><option value="">Todos los tipos</option></select><select id="accountFilter"><option value="">Todas las cuentas</option></select></div><div class="card scroll" id="positionTable"></div></section>
 <section class="page" id="evolucion"><h2>Evolución observada</h2><div class="filters"><select id="historyPeriod" aria-label="Período observado"><option value="0">Todo</option><option value="31">1 mes</option><option value="92">3 meses</option><option value="183">6 meses</option><option value="366">1 año</option><option value="1096">3 años</option><option value="1827">5 años</option></select></div><div class="card" id="historyBox"><p class="muted">Sin historial verificado cargado.</p></div><small>Los snapshots representan patrimonio observado, no rentabilidad. Nunca se crean cierres artificiales.</small></section>
-<section class="page" id="herramientas"><h2>Herramientas</h2><div class="card"><h3>Asesor IA · Comparar · Simulador</h3><p>El escritorio DEMO incluye análisis técnico, comparación fundamental y simulación de operaciones. Se abre sin utilizar datos de Bersoch.</p><a class="action" href="https://demo-pms-max-mxqteogjttzuufoah5nwnj.streamlit.app/" target="_blank" rel="noopener noreferrer">Abrir herramientas de DEMO</a></div><div class="card"><h3>Fuente de datos</h3><p>Base DEMO PMS Max · DEMO_INVENTARIO_V5 · 65 instrumentos esperados · 8 custodios ficticios.</p></div></section>
+<section class="page" id="herramientas"><h2>Herramientas</h2>
+<div class="card"><h3>Comparar posiciones</h3><div class="filters"><select id="compareA" aria-label="Activo A"></select><select id="compareB" aria-label="Activo B"></select></div><div id="compareResult" aria-live="polite"></div><small>Comparación patrimonial ficticia; no incluye cotizaciones de mercado verificadas.</small></div>
+<div class="card"><h3>Simulador de operaciones</h3><div class="filters"><select id="simTicker" aria-label="Activo"></select><select id="simOperation" aria-label="Operación"><option>Comprar</option><option>Vender</option></select></div><div class="filters"><input id="simAmount" type="number" inputmode="decimal" min="0" step="100" placeholder="Monto USD" aria-label="Monto USD" style="flex:1;min-width:0;background:#12263b;color:#fff;border:1px solid #345675;border-radius:12px;padding:10px"></div><div class="filters"><select id="simFunding" aria-label="Origen de fondos"></select><select id="simSource" aria-label="Activo de origen"></select></div><div class="filters"><input id="simCashUsed" type="number" inputmode="decimal" min="0" step="100" placeholder="CASH utilizado (si combinado)" aria-label="CASH utilizado" style="flex:1;min-width:0;background:#12263b;color:#fff;border:1px solid #345675;border-radius:12px;padding:10px"></div><button id="simulateBtn">Simular (no opera)</button><div id="simResult" aria-live="polite"></div><small>Sin comisiones ni deslizamiento; no altera la base DEMO V5.</small></div>
+<div class="card"><h3>Asesor IA · Comparar · Simulador</h3><p>El escritorio DEMO incluye análisis técnico, comparación fundamental y simulación de operaciones. Se abre sin utilizar datos de Bersoch.</p><a class="action" href="https://demo-pms-max-mxqteogjttzuufoah5nwnj.streamlit.app/" target="_blank" rel="noopener noreferrer">Abrir herramientas de DEMO</a></div><div class="card"><h3>Fuente de datos</h3><p>Base DEMO PMS Max · DEMO_INVENTARIO_V5 · 65 instrumentos esperados · 8 custodios ficticios.</p></div></section>
 </main>
 <nav id="nav"><button class="active" data-page="resumen">Resumen</button><button data-page="diversificacion">Exposición</button><button data-page="custodia">Custodia</button><button data-page="posiciones">Posiciones</button><button data-page="evolucion">Evolución</button><button data-page="herramientas">Herramientas</button></nav>
 <script>
@@ -129,8 +132,71 @@ function render(){
   const el=document.getElementById(id);el.replaceChildren(new Option(id==='typeFilter'?'Todos los tipos':'Todas las cuentas',''));
   options.sort().forEach(x=>el.add(new Option(x,x)));
  }
- renderPositions();
+ renderPositions();setupTools();
 }
+function tradeBalances(){
+ const vals=Object.fromEntries(items.map(x=>[x.ticker,x.value]));
+ if(!('CASH' in vals))vals.CASH=0;
+ return vals;
+}
+function renderCompare(){
+ const a=document.getElementById('compareA').value,b=document.getElementById('compareB').value,box=document.getElementById('compareResult');
+ if(!a||!b||a===b){box.textContent='Elegí dos instrumentos diferentes.';return;}
+ const aa=items.find(x=>x.ticker===a),bb=items.find(x=>x.ticker===b);
+ if(!aa||!bb){box.textContent='Instrumento no disponible.';return;}
+ box.innerHTML=table([{name:a,value:aa.value},{name:b,value:bb.value}]);
+}
+function setOptions(select,options){select.replaceChildren();options.forEach(x=>select.add(new Option(x,x)));}
+function setupTools(){
+ const tickers=items.map(x=>x.ticker).sort(),tradable=tickers.filter(t=>t!=='CASH');
+ for(const id of ['compareA','compareB'])setOptions(document.getElementById(id),tickers);
+ document.getElementById('compareB').selectedIndex=Math.min(1,tickers.length-1);
+ setOptions(document.getElementById('simTicker'),tradable);
+ updateFunding();renderCompare();document.getElementById('simResult').textContent='';
+}
+function updateFunding(){
+ const op=document.getElementById('simOperation').value;
+ setOptions(document.getElementById('simFunding'),op==='Comprar'?['CASH','Venta de otro activo','CASH + venta de activo','Aporte externo']:['CASH','Retiro externo']);
+ updateSources();
+}
+function updateSources(){
+ const ticker=document.getElementById('simTicker').value;
+ const src=document.getElementById('simSource');
+ setOptions(src,items.map(x=>x.ticker).filter(t=>t!=='CASH'&&t!==ticker));
+ const combined=document.getElementById('simFunding').value==='CASH + venta de activo';
+ const sale=['Venta de otro activo','CASH + venta de activo'].includes(document.getElementById('simFunding').value);
+ src.disabled=!sale;document.getElementById('simCashUsed').disabled=!combined;
+}
+function simulateMobile(){
+ const box=document.getElementById('simResult');
+ if(!items.length){box.textContent='Inventario DEMO no disponible.';return;}
+ const values=tradeBalances(),ticker=document.getElementById('simTicker').value,op=document.getElementById('simOperation').value;
+ const amount=Number(document.getElementById('simAmount').value),funding=document.getElementById('simFunding').value;
+ const source=document.getElementById('simSource').value,cashUsed=Number(document.getElementById('simCashUsed').value||0);
+ const cash=values.CASH||0,initial=values[ticker],start=Object.values(values).reduce((s,x)=>s+x,0);
+ const reject=msg=>{box.textContent=msg;return;};
+ if(!ticker||ticker==='CASH'||!Number.isFinite(initial))return reject('Activo inválido.');
+ if(!Number.isFinite(amount)||amount<=0||!Number.isFinite(cashUsed)||cashUsed<0)return reject('Monto inválido.');
+ if(!Number.isFinite(start)||start<=0)return reject('Patrimonio inválido.');
+ const next={...values};let totalNext=start;
+ if(op==='Comprar'){
+  const used=funding==='CASH'?amount:funding==='CASH + venta de activo'?cashUsed:0;
+  if(used>amount||used>cash)return reject('CASH insuficiente o importe no válido.');
+  const sold=['Venta de otro activo','CASH + venta de activo'].includes(funding)?amount-used:0;
+  if(sold>0){if(!source||source===ticker||!Number.isFinite(next[source])||sold>next[source])return reject('Activo de origen insuficiente.');next[source]-=sold;}
+  next.CASH-=used;next[ticker]+=amount;if(funding==='Aporte externo')totalNext+=amount;
+ }else{
+  if(amount>initial)return reject('La venta supera la posición.');
+  next[ticker]-=amount;
+  if(funding==='CASH')next.CASH+=amount;else totalNext-=amount;
+ }
+ if(!Number.isFinite(totalNext)||totalNext<=0||Object.values(next).some(x=>!Number.isFinite(x)||x<0)||Math.abs(Object.values(next).reduce((s,x)=>s+x,0)-totalNext)>.01)return reject('Los fondos simulados no concilian.');
+ box.innerHTML='<div class="card"><h3>Resultado ficticio · sin ejecutar</h3><p>Patrimonio: '+money(start)+' → '+money(totalNext)+'</p><p>'+escapeHTML(ticker)+': '+money(initial)+' → '+money(next[ticker])+'</p><p>CASH: '+money(cash)+' → '+money(next.CASH)+'</p><p>Peso activo: '+fmtp.format(initial/start)+' → '+fmtp.format(next[ticker]/totalNext)+'</p></div>';
+}
+['compareA','compareB'].forEach(id=>document.getElementById(id).addEventListener('change',renderCompare));
+['simOperation'].forEach(id=>document.getElementById(id).addEventListener('change',updateFunding));
+['simFunding','simTicker'].forEach(id=>document.getElementById(id).addEventListener('change',updateSources));
+document.getElementById('simulateBtn').addEventListener('click',simulateMobile);
 function renderPositions(){const ty=document.getElementById('typeFilter').value,account=document.getElementById('accountFilter').value;
  const rows=items.filter(x=>!ty||x.type===ty).map(x=>({name:x.ticker,value:account?x.price*x.accounts.find(a=>a.name===account).quantity:x.value})).filter(x=>x.value>0).sort((a,b)=>b.value-a.value);
  document.getElementById('positionTable').innerHTML=table(rows);
