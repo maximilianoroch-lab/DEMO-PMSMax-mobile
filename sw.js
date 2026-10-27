@@ -1,4 +1,4 @@
-const CACHE='demo-pms-max-mobile-release-1';
+const CACHE='demo-pms-max-mobile-independent-v5-20261027';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',e=>{
   self.skipWaiting();
