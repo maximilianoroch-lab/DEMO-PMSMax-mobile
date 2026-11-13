@@ -244,7 +244,7 @@ function movers(rows){
  const tickers=new Set(items.map(x=>x.ticker));
  const byTicker=new Map(),fxRatios=new Map();
  for(const r of rows){
-  const ticker=String(r.Ticker||'').trim().toUpperCase(),date=moverDate(r.Fecha),currency=String(r.Moneda||'').trim().toUpperCase(),price=number(r.Precio),usd=number(r['Precio USD']);
+  const ticker=String(r.Ticker||'').trim().toUpperCase(),date=moverDate(r.Fecha),currency=String(r.Moneda||'').trim().toUpperCase(),price=number(r.Precio),usd=number(String(r['Precio USD']||'').replace(/[^0-9,.-]/g,''));
   if(!tickers.has(ticker)||!date||!(price>0))continue;
   if(currency==='ARS'&&usd>0){
    const ratio=price/usd;
