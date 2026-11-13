@@ -23,6 +23,7 @@ nav button{border:0;border-radius:0;background:transparent;font-size:11px;min-wi
 nav button.active{color:#fff;border-top:3px solid var(--blue)}.warning{border:1px solid #9a743b;background:#342715;border-radius:12px;padding:12px;margin:12px 0}
 a{color:#8fcfff}#status{font-size:12px}.pill{font-size:10px;border:1px solid var(--line);padding:3px 7px;border-radius:20px;color:var(--muted)}
 @media(min-width:600px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}nav button{font-size:13px}}
+.mover-table{width:100%;table-layout:fixed;font-size:10px}.mover-table th,.mover-table td{padding:9px 4px;overflow-wrap:anywhere;vertical-align:middle}.mover-table th:first-child,.mover-table td:first-child{width:21%}.mover-table th:nth-child(2),.mover-table td:nth-child(2){width:29%}.mover-table th:nth-child(3),.mover-table td:nth-child(3){width:25%}.mover-table th:nth-child(4),.mover-table td:nth-child(4){width:25%}.mover-up{color:#54d49a;font-weight:750}.mover-down{color:#ff7a7a;font-weight:750}.mover-flat{color:#93a7bd}
 </style></head><body>
 <header><button id="refresh" class="refresh">Actualizar</button><h1>DEMO PMS Max <span class="pill">Ficticia</span></h1><small id="status">Conectando con Base DEMO PMS Max…</small></header>
 <main>
@@ -31,7 +32,7 @@ a{color:#8fcfff}#status{font-size:12px}.pill{font-size:10px;border:1px solid var
 <section class="page" id="diversificacion"><h2>Exposición directa</h2><small>Los ETF se muestran como instrumentos completos; no se asignan componentes internos sin datos respaldados.</small><div class="grid"><div class="card" id="regions"></div><div class="card" id="sectors"></div></div></section>
 <section class="page" id="custodia"><h2>Distribución por custodio</h2><div class="card" id="custodians"></div></section>
 <section class="page" id="posiciones"><h2>Posiciones por instrumento</h2><div class="filters"><select id="typeFilter"><option value="">Todos los tipos</option></select><select id="accountFilter"><option value="">Todas las cuentas</option></select></div><div class="card scroll" id="positionTable"></div></section>
-<section class="page" id="evolucion"><h2>Evolución observada</h2><div class="filters"><select id="historyPeriod" aria-label="Período observado"><option value="0">Todo</option><option value="31">1 mes</option><option value="92">3 meses</option><option value="183">6 meses</option><option value="366">1 año</option><option value="1096">3 años</option><option value="1827">5 años</option></select></div><div class="card" id="historyBox"><p class="muted">Sin historial verificado cargado.</p></div><small>Los snapshots representan patrimonio observado, no rentabilidad. Nunca se crean cierres artificiales.</small></section>
+<section class="page" id="evolucion"><h2>Evolución observada</h2><div class="filters"><select id="historyPeriod" aria-label="Período observado"><option value="0">Todo</option><option value="31">1 mes</option><option value="92">3 meses</option><option value="183">6 meses</option><option value="366">1 año</option><option value="1096">3 años</option><option value="1827">5 años</option></select></div><div class="card" id="historyBox"><p class="muted">Sin historial verificado cargado.</p></div><h2>Mayores variaciones de cotización · ARS</h2><small>Todos los activos DEMO con cierres válidos; precios unitarios en pesos, sin alterar valores patrimoniales en USD.</small><div class="card"><h3>Top 10 subas</h3><div id="topRises" aria-live="polite">Cargando cotizaciones…</div></div><div class="card"><h3>Top 10 bajas</h3><div id="topFalls" aria-live="polite">Cargando cotizaciones…</div></div><small id="moversDate"></small><small>Los snapshots representan patrimonio observado, no rentabilidad. Nunca se crean cierres artificiales.</small></section>
 <section class="page" id="herramientas"><h2>Herramientas</h2>
 <div class="card"><h3>Comparar posiciones</h3><div class="filters"><select id="compareA" aria-label="Activo A"></select><select id="compareB" aria-label="Activo B"></select></div><div id="compareResult" aria-live="polite"></div><small>Comparación patrimonial ficticia; no incluye cotizaciones de mercado verificadas.</small></div>
 <div class="card"><h3>Simulador de operaciones</h3><div class="filters"><select id="simTicker" aria-label="Activo"></select><select id="simOperation" aria-label="Operación"><option>Comprar</option><option>Vender</option></select></div><div class="filters"><input id="simAmount" type="number" inputmode="decimal" min="0" step="100" placeholder="Monto USD" aria-label="Monto USD" style="flex:1;min-width:0;background:#12263b;color:#fff;border:1px solid #345675;border-radius:12px;padding:10px"></div><div class="filters"><select id="simFunding" aria-label="Origen de fondos"></select><select id="simSource" aria-label="Activo de origen"></select></div><div class="filters"><input id="simCashUsed" type="number" inputmode="decimal" min="0" step="100" placeholder="CASH utilizado (si combinado)" aria-label="CASH utilizado" style="flex:1;min-width:0;background:#12263b;color:#fff;border:1px solid #345675;border-radius:12px;padding:10px"></div><button id="simulateBtn">Simular (no opera)</button><div id="simResult" aria-live="polite"></div><small>Sin comisiones ni deslizamiento; no altera la base DEMO V5.</small></div>
@@ -212,7 +213,7 @@ async function load(){const status=document.getElementById('status');status.text
   const url='https://docs.google.com/spreadsheets/d/'+DEMO_SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(DEMO_TAB);
   const response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('La base DEMO no respondió: '+response.status);
   const next=validate(parseCSV(await response.text()));
-  items=next;render();loadHistory();status.textContent='Base DEMO PMS Max · '+new Date().toLocaleString('es-AR')+' · '+items.length+' instrumentos ficticios';
+  items=next;render();loadHistory();loadMovers();status.textContent='Base DEMO PMS Max · '+new Date().toLocaleString('es-AR')+' · '+items.length+' instrumentos ficticios';
  }catch(e){
   items=[];total=0;document.querySelectorAll('#summary,#top,#regions,#sectors,#custodians,#positionTable').forEach(x=>x.textContent='No se muestran datos porque falló la validación de la base DEMO.');
   status.textContent='Inventario DEMO no disponible: '+e.message;
@@ -228,6 +229,68 @@ document.getElementById('voiceSummaryBtn').addEventListener('click',()=>{
  const spoken=voiceSummary(),box=document.getElementById('voiceSummaryText');box.textContent=spoken;box.hidden=false;
  if('speechSynthesis'in window){window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(spoken);u.lang='es-AR';u.rate=1.15;window.speechSynthesis.speak(u);}
 });
+// Rankings exclusivamente desde Base DEMO PMS Max, nunca desde Bersoch real.
+function moverDate(text){
+ const s=String(text||'').trim();
+ const first=s.split(' ')[0];
+ if(first.includes('/')){
+  const parts=first.split('/');
+  if(parts.length===3&&parts[2].length===4)return parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
+ }
+ if(first.length>=10&&first[4]==='-'&&first[7]==='-')return first.slice(0,10);
+ return '';
+}
+function movers(rows){
+ const tickers=new Set(items.map(x=>x.ticker));
+ const byTicker=new Map(),fxRatios=new Map();
+ for(const r of rows){
+  const ticker=String(r.Ticker||'').trim().toUpperCase(),date=moverDate(r.Fecha),currency=String(r.Moneda||'').trim().toUpperCase(),price=number(r.Precio),usd=number(r['Precio USD']);
+  if(!tickers.has(ticker)||!date||!(price>0))continue;
+  if(currency==='ARS'&&usd>0){
+   const ratio=price/usd;
+   if(ratio>100&&ratio<10000){if(!fxRatios.has(date))fxRatios.set(date,[]);fxRatios.get(date).push(ratio);}
+  }
+  if(!byTicker.has(ticker))byTicker.set(ticker,new Map());
+  byTicker.get(ticker).set(date,{date,currency,price});
+ }
+ const fx=new Map();
+ for(const [date,vals] of fxRatios){
+  if(vals.length<3)continue;
+  vals.sort((a,b)=>a-b);fx.set(date,vals[Math.floor(vals.length/2)]);
+ }
+ const ranked=[];
+ for(const [ticker,map] of byTicker){
+  const points=[...map.values()].map(x=>({...x,ars:x.currency==='ARS'?x.price:CRYPTO.has(ticker)&&x.currency==='USD'&&fx.has(x.date)?x.price*fx.get(x.date):null})).filter(x=>x.ars>0).sort((a,b)=>a.date.localeCompare(b.date));
+  if(points.length<2)continue;
+  const last=points.at(-1),prev=points.at(-2),month=last.date.slice(0,7);
+  const datePrevMonth=new Date(last.date.slice(0,7)+'-01T12:00:00');datePrevMonth.setMonth(datePrevMonth.getMonth()-1);
+  const targetMonth=datePrevMonth.getFullYear()+'-'+String(datePrevMonth.getMonth()+1).padStart(2,'0');
+  const base=points.filter(x=>x.date.slice(0,7)===targetMonth).at(-1);
+  ranked.push({ticker,price:last.ars,day:last.ars/prev.ars-1,month:base?last.ars/base.ars-1:null,date:last.date});
+ }
+ const date=ranked.map(x=>x.date).sort().at(-1)||'';
+ return {date,ranked:ranked.filter(x=>x.date===date)};
+}
+function moverPct(x){return x===null?'Sin datos':(x>0?'+':'')+new Intl.NumberFormat('es-AR',{style:'percent',minimumFractionDigits:2,maximumFractionDigits:2}).format(x)}
+function renderMovers(rows){
+ const {date,ranked}=movers(rows),fmtPrice=new Intl.NumberFormat('es-AR',{maximumFractionDigits:4});
+ const display=(id,values)=>{
+  const e=document.getElementById(id);
+  const header='<div class="scroll"><table class="mover-table"><thead><tr><th>Activo</th><th>Cotización</th><th>Diaria</th><th>Mes</th></tr></thead><tbody>';
+  const cell=x=>'<span class="'+(x===null?'mover-flat':x>0?'mover-up':x<0?'mover-down':'mover-flat')+'">'+moverPct(x)+'</span>';
+  e.innerHTML=header+(values.map(x=>'<tr><td><strong>'+escapeHTML(x.ticker)+'</strong></td><td>ARS '+fmtPrice.format(x.price)+'</td><td>'+cell(x.day)+'</td><td>'+cell(x.month)+'</td></tr>').join('')||'<tr><td colspan="4">Sin cierres comparables con este signo.</td></tr>')+'</tbody></table></div>';
+ };
+ display('topRises',ranked.filter(x=>x.day>0).sort((a,b)=>b.day-a.day).slice(0,10));
+ display('topFalls',ranked.filter(x=>x.day<0).sort((a,b)=>a.day-b.day).slice(0,10));
+ document.getElementById('moversDate').textContent=date?'Último cierre común: '+date+' · no necesariamente tiempo real. Cripto: conversión CCL implícita fechada. DEMO ficticia.':'Sin dos cierres válidos comparables; no se inventan variaciones.';
+}
+async function loadMovers(){
+ try{
+  const url='https://docs.google.com/spreadsheets/d/'+DEMO_SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent('historial_precios')+'&range='+encodeURIComponent('A1:J5000');
+  const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('historial '+r.status);
+  renderMovers(parseCSV(await r.text()));
+ }catch(e){for(const id of ['topRises','topFalls'])document.getElementById(id).textContent='Historial DEMO no disponible: '+e.message;}
+}
 function renderHistory(){
  const box=document.getElementById('historyBox');
  const period=Number(document.getElementById('historyPeriod').value);
