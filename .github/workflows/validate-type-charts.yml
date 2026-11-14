@@ -1,0 +1,35 @@
+name: Validate five-type dashboard
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '.github/workflows/validate-type-charts.yml'
+  workflow_dispatch:
+jobs:
+  type-charts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify five-color palette and inline JavaScript
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'), vm=require('vm'), assert=require('node:assert/strict');
+          const html=fs.readFileSync('index.html','utf8');
+          const code=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+          assert.ok(code,'Missing inline JavaScript');
+          new vm.Script(code,{filename:'index.html'});
+          const names=['Cripto','ETF','Cedear','Bono','Acción AR'];
+          for(const name of names)assert.ok(code.includes("'"+name+"'"),'Missing type '+name);
+          for(const hex of ['#d71920','#ffc000','#80c342','#4472c4','#8c8c8c'])
+            assert.ok(code.includes(hex),'Missing color '+hex);
+          for(const id of ['typeSummary','typeEvolution'])
+            assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id+' must be unique');
+          assert.ok(code.includes('data/demo_daily_assets.csv'),'DEMO history must be independent');
+          assert.ok(!code.includes('Base PMS Bersoch'),'Do not reference real portfolio');
+          console.log('Five-color DEMO dashboard validated');
+          NODE
