@@ -290,11 +290,14 @@ function renderMovers(rows){
  document.getElementById('moversDate').textContent=date?'Último cierre común: '+date+' · no necesariamente tiempo real. Cripto: conversión CCL implícita fechada. DEMO ficticia.':'Sin dos cierres válidos comparables; no se inventan variaciones.';
 }
 async function loadMovers(){
- try{
-  const url='https://docs.google.com/spreadsheets/d/'+DEMO_SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent('historial_precios')+'&range='+encodeURIComponent('A1:J5000');
-  const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('historial '+r.status);
-  renderMovers(parseCSV(await r.text()));
- }catch(e){for(const id of ['topRises','topFalls'])document.getElementById(id).textContent='Historial DEMO no disponible: '+e.message;}
+ // HISTORIAL LEGACY BLOQUEADO: la pestaña historial_precios en Base DEMO es
+ // una copia de la cartera real y no una serie observada de DEMO V5.
+ // No simular precios ARS a partir de patrimonio ficticio en USD.
+ for(const id of ['topRises','topFalls']){
+  document.getElementById(id).innerHTML='<p class="muted">Sin cotizaciones diarias ARS independientes de DEMO V5. No se inventan rankings.</p>';
+ }
+ document.getElementById('moversDate').textContent=
+  'Serie DEMO pendiente de reconstrucción. El historial antiguo copiado de Bersoch fue excluido de estos rankings.';
 }
 // La DEMO sólo usa sus propios snapshots por ticker, sin consultar Base PMS Bersoch.
 async function loadDemoTypeHistory(){
