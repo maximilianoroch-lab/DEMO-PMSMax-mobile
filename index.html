@@ -314,8 +314,13 @@ async function loadDemoTypeHistory(){
    if(!byDate.has(date))byDate.set(date,Object.fromEntries(TYPE_ORDER.map(x=>[x,0])));
    byDate.get(date)[type]+=value;
   }
-  const dates=[...byDate.keys()].sort();
-  if(dates.length<2){el.textContent='Se necesitan al menos dos cierres independientes por tipo.';return;}
+  const orderedDates=[...byDate.keys()].sort();
+  const dates=orderedDates.filter((date,i)=>{
+   if(i===0)return true;
+   const previous=byDate.get(orderedDates[i-1]),current=byDate.get(date);
+   return TYPE_ORDER.some(t=>Math.abs(current[t]-previous[t])>0.000001);
+  });
+  if(dates.length<2){el.innerHTML='<p class="muted">Todavía no hay dos valuaciones distintas por tipo: las fotos DEMO V5 almacenadas son idénticas. No se dibujan curvas de mercado artificiales.</p>';return;}
   const maxValue=Math.max(...dates.flatMap(date=>TYPE_ORDER.map(t=>byDate.get(date)[t])));
   const max=Math.max(90000,Math.ceil(maxValue/50000)*50000);
   const W=Math.max(600,dates.length*30),H=255,l=62,r=14,t=16,b=37;
@@ -334,7 +339,7 @@ function renderHistory(){
  const visible=period&&latest?history.filter(r=>(latest-new Date(r.date+'T12:00:00'))/86400000<=period):history;
  if(!visible.length){box.innerHTML='<p class="muted">Sin cierres independientes verificables para mostrar.</p>';return;}
  const rows=[...visible].reverse().map((r,i)=>'<tr><td>'+escapeHTML(r.date)+'</td><td class="num">'+money(r.value)+'</td></tr>').join('');
- box.innerHTML='<h3>Cierres observados · '+visible.length+'</h3><div class="scroll"><table><thead><tr><th>Fecha</th><th class="num">Patrimonio USD</th></tr></thead><tbody>'+rows+'</tbody></table></div><small>Valores ficticios indicativos · no equivalen a rendimiento ni rentabilidad.</small>';
+ box.innerHTML='<h3>Observaciones con cambio · '+visible.length+'</h3><div class="scroll"><table><thead><tr><th>Fecha</th><th class="num">Patrimonio USD</th></tr></thead><tbody>'+rows+'</tbody></table></div><small>Solo fechas con valuación distinta respecto de la anterior; archivo DEMO preservado. No es rentabilidad ni cierre de mercado.</small>';
 }
 async function loadHistory(){
  try{
@@ -342,7 +347,9 @@ async function loadHistory(){
   const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error('sin snapshots');
   const rows=parseCSV(await r.text()).map(x=>({date:x.Fecha,value:number(x['Patrimonio USD']),estado:x.Estado}))
     .filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&Number.isFinite(x.value)&&x.value>0&&x.estado==='INDICATIVO V5');
-  const map=new Map(rows.map(x=>[x.date,x]));history=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  const map=new Map(rows.map(x=>[x.date,x]));
+  const ordered=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  history=ordered.filter((x,i)=>i===0||Math.abs(x.value-ordered[i-1].value)>0.000001);
  }catch(e){history=[]}
  renderHistory();
 }
