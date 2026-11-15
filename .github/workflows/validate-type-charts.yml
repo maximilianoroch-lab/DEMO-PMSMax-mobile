@@ -31,5 +31,8 @@ jobs:
             assert.equal((html.match(new RegExp('id="'+id+'"','g'))||[]).length,1,id+' must be unique');
           assert.ok(code.includes('data/demo_daily_assets.csv'),'DEMO history must be independent');
           assert.ok(!code.includes('18qu9LXo55qQZq4oEAq42u_DKaI7e9lZL_PkfUZiu0T0'),'Do not reference real portfolio sheet');
+          const movers=code.slice(code.indexOf('async function loadMovers(){'),code.indexOf('async function loadDemoTypeHistory(){'));
+          assert.ok(movers && !movers.includes('fetch('),'DEMO cannot fetch legacy market history for its rankings');
+          assert.ok(movers.includes('Sin cotizaciones diarias ARS independientes'),'DEMO must explain unavailable independent prices');
           console.log('Five-color DEMO dashboard validated');
           NODE
