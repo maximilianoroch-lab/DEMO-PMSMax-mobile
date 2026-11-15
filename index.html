@@ -246,7 +246,7 @@ async function load(){const status=document.getElementById('status');status.text
    status.textContent='MODO SIN CONEXIÓN · DEMO ficticia guardada el '+new Date(cached.savedAt).toLocaleString('es-AR')+' · datos NO actualizados';
    return;
   }
-  showDemoUnavailable('Inventario DEMO sin conexión ni copia válida: '+e.message);
+  showDemoUnavailable('Inventario DEMO no disponible (sin conexión ni copia válida): '+e.message);
   return;
  }
  try{
