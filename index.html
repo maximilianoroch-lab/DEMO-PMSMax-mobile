@@ -213,16 +213,52 @@ document.getElementById('nav').addEventListener('click',e=>{const b=e.target.clo
  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id===b.dataset.page));
  window.scrollTo({top:0,behavior:'smooth'});
 });
-async function load(){const status=document.getElementById('status');status.textContent='Actualizando inventario ficticio V5…';
+const DEMO_V5_CACHE_KEY='demo-pms-max-inventory-v5-validated-20261115';
+function cacheValidDemoRaw(raw){
+ try{localStorage.setItem(DEMO_V5_CACHE_KEY,JSON.stringify({raw,savedAt:new Date().toISOString()}));}catch(e){}
+}
+function restoreValidDemoCache(){
  try{
-  const url='https://docs.google.com/spreadsheets/d/'+DEMO_SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(DEMO_TAB);
-  const response=await fetch(url,{cache:'no-store'});if(!response.ok)throw Error('La base DEMO no respondió: '+response.status);
-  const next=validate(parseCSV(await response.text()));
-  items=next;render();loadHistory();loadDemoTypeHistory();loadMovers();status.textContent='Base DEMO PMS Max · '+new Date().toLocaleString('es-AR')+' · '+items.length+' instrumentos ficticios';
+  const c=JSON.parse(localStorage.getItem(DEMO_V5_CACHE_KEY)||'null');
+  if(!c||typeof c.raw!=='string'||!Number.isFinite(Date.parse(c.savedAt)))return null;
+  // Re-run the SAME V5 inventory validator. An unchecked cache is never shown.
+  const validated=validate(parseCSV(c.raw));
+  return {items:validated,savedAt:c.savedAt};
+ }catch(e){return null;}
+}
+function showDemoUnavailable(message){
+ items=[];total=0;
+ document.querySelectorAll('#summary,#top,#regions,#sectors,#custodians,#positionTable')
+  .forEach(x=>x.textContent='No se muestran datos porque falló la validación o carga de la base DEMO.');
+ document.getElementById('status').textContent=message;
+}
+async function load(){const status=document.getElementById('status');status.textContent='Actualizando inventario ficticio V5…';
+ const url='https://docs.google.com/spreadsheets/d/'+DEMO_SHEET_ID+'/gviz/tq?tqx=out:csv&sheet='+encodeURIComponent(DEMO_TAB);
+ let raw;
+ try{
+  const response=await fetch(url,{cache:'no-store'});
+  if(!response.ok)throw Error('La base DEMO no respondió: '+response.status);
+  raw=await response.text();
  }catch(e){
-  items=[];total=0;document.querySelectorAll('#summary,#top,#regions,#sectors,#custodians,#positionTable').forEach(x=>x.textContent='No se muestran datos porque falló la validación de la base DEMO.');
-  status.textContent='Inventario DEMO no disponible: '+e.message;
- }}
+  const cached=restoreValidDemoCache();
+  if(cached){
+   items=cached.items;render();loadHistory();loadDemoTypeHistory();loadMovers();
+   status.textContent='MODO SIN CONEXIÓN · DEMO ficticia guardada el '+new Date(cached.savedAt).toLocaleString('es-AR')+' · datos NO actualizados';
+   return;
+  }
+  showDemoUnavailable('Inventario DEMO no disponible (sin conexión ni copia válida): '+e.message);
+  return;
+ }
+ try{
+  // A network response with invalid inventory must fail closed, not be hidden by cache.
+  const next=validate(parseCSV(raw));
+  items=next;render();cacheValidDemoRaw(raw);
+  loadHistory();loadDemoTypeHistory();loadMovers();
+  status.textContent='Base DEMO PMS Max · '+new Date().toLocaleString('es-AR')+' · '+items.length+' instrumentos ficticios';
+ }catch(e){
+  showDemoUnavailable('Inventario DEMO rechazado por validación: '+e.message);
+ }
+}
 function voiceSummary(){
  if(!items.length)return 'El inventario ficticio todavía no está disponible.';
  const sorted=[...items].sort((a,b)=>b.value-a.value);
