@@ -23,13 +23,14 @@ nav button{border:0;border-radius:0;background:transparent;font-size:11px;min-wi
 nav button.active{color:#fff;border-top:3px solid var(--blue)}.warning{border:1px solid #9a743b;background:#342715;border-radius:12px;padding:12px;margin:12px 0}
 a{color:#8fcfff}#status{font-size:12px}.pill{font-size:10px;border:1px solid var(--line);padding:3px 7px;border-radius:20px;color:var(--muted)}
 @media(min-width:600px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}nav button{font-size:13px}}
+.breakdown-list{display:flex;flex-direction:column;gap:4px}.breakdown-row{padding:10px 0;border-bottom:1px solid #28445c;min-width:0}.breakdown-row:last-child{border-bottom:0}.breakdown-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline}.breakdown-name{font-size:13px;line-height:1.3;overflow-wrap:anywhere}.breakdown-pct{font-size:15px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}.breakdown-usd{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}.breakdown-row .bar{margin:8px 0 0;height:7px}.breakdown-title{font-size:12px;color:var(--muted);margin:2px 0 8px}
 .mover-table{width:100%;table-layout:fixed;font-size:10px}.mover-table th,.mover-table td{padding:9px 4px;overflow-wrap:anywhere;vertical-align:middle}.mover-table th:first-child,.mover-table td:first-child{width:21%}.mover-table th:nth-child(2),.mover-table td:nth-child(2){width:29%}.mover-table th:nth-child(3),.mover-table td:nth-child(3){width:25%}.mover-table th:nth-child(4),.mover-table td:nth-child(4){width:25%}.mover-up{color:#54d49a;font-weight:750}.mover-down{color:#ff7a7a;font-weight:750}.mover-flat{color:#93a7bd}
 </style></head><body>
 <header><button id="refresh" class="refresh">Actualizar</button><h1>DEMO PMS Max <span class="pill">Ficticia</span></h1><small id="status">Conectando con Base DEMO PMS Max…</small></header>
 <main>
 <div class="warning">Cartera exclusivamente ficticia · cotizaciones USD indicativas, no verificadas. Sin escalado ni vínculo con posiciones reales.</div>
 <section class="page active" id="resumen"><button id="voiceSummaryBtn" type="button">Escuchar resumen</button><div class="card" id="voiceSummaryText" hidden aria-live="polite"></div><div id="summary"></div><h2>Composición por tipo · cinco grupos</h2><div class="card" id="typeSummary"></div><h2>Mayores posiciones</h2><div class="card scroll" id="top"></div></section>
-<section class="page" id="diversificacion"><h2>Exposición directa</h2><small>Los ETF se muestran como instrumentos completos; no se asignan componentes internos sin datos respaldados.</small><div class="grid"><div class="card" id="regions"></div><div class="card" id="sectors"></div></div></section>
+<section class="page" id="diversificacion"><h2>Exposición directa</h2><small>Los ETF se muestran como instrumentos completos; no se asignan componentes internos sin datos respaldados.</small><div><div class="card" id="regions"></div><div class="card" id="sectors"></div></div></section>
 <section class="page" id="custodia"><h2>Distribución por custodio</h2><div class="card" id="custodians"></div></section>
 <section class="page" id="posiciones"><h2>Posiciones por instrumento</h2><div class="filters"><select id="typeFilter"><option value="">Todos los tipos</option></select><select id="accountFilter"><option value="">Todas las cuentas</option></select></div><div class="card scroll" id="positionTable"></div></section>
 <section class="page" id="evolucion"><h2>Evolución observada</h2><div class="filters"><select id="historyPeriod" aria-label="Período observado"><option value="0">Todo</option><option value="31">1 mes</option><option value="92">3 meses</option><option value="183">6 meses</option><option value="366">1 año</option><option value="1096">3 años</option><option value="1827">5 años</option></select></div><div class="card" id="historyBox"><p class="muted">Sin historial verificado cargado.</p></div><h2>Evolución de los cinco tipos · USD</h2><div class="card" id="typeEvolution"><p class="muted">Cargando cierres ficticios independientes…</p></div><h2>Mayores variaciones de cotización · ARS</h2><small>Todos los activos DEMO con cierres válidos; precios unitarios en pesos, sin alterar valores patrimoniales en USD.</small><div class="card"><h3>Top 10 subas</h3><div id="topRises" aria-live="polite">Cargando cotizaciones…</div></div><div class="card"><h3>Top 10 bajas</h3><div id="topFalls" aria-live="polite">Cargando cotizaciones…</div></div><small id="moversDate"></small><small>Los snapshots representan patrimonio observado, no rentabilidad. Nunca se crean cierres artificiales.</small></section>
@@ -119,7 +120,15 @@ function validate(raw){
  return result;
 }
 function table(rows){return '<table><thead><tr><th>Instrumento</th><th class="num">Valor USD</th><th class="num">Peso</th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+escapeHTML(r.name)+'</td><td class="num">'+money(r.value)+'</td><td class="num">'+fmtp.format(r.value/total)+'</td></tr>').join('')+'</tbody></table>'}
-function bars(rows){return rows.map(r=>'<div class="flex"><strong>'+escapeHTML(r.name)+'</strong><span>'+fmtp.format(r.value/total)+'</span></div><div class="bar"><div class="fill" style="width:'+Math.min(100,100*r.value/total)+'%"></div></div>').join('')}
+function breakdownRows(rows,color='#79bff2',showUSD=false){
+ return '<div class="breakdown-list">'+rows.filter(r=>Number.isFinite(r.value)&&r.value>=0).map(r=>{
+  const share=total>0?r.value/total:0;
+  return '<div class="breakdown-row"><div class="breakdown-head"><strong class="breakdown-name" style="color:'+color+'">'+escapeHTML(r.name)+'</strong><span class="breakdown-pct">'+fmtp.format(share)+'</span></div>'+
+   (showUSD?'<div class="breakdown-usd">'+money(r.value)+'</div>':'')+
+   '<div class="bar"><div class="fill" style="width:'+Math.min(100,Math.max(0,100*share))+'%;background:'+color+'"></div></div></div>';
+ }).join('')+'</div>';
+}
+function bars(rows){return breakdownRows(rows)}
 function render(){
  total=items.reduce((s,x)=>s+x.value,0);if(!(total>0))throw Error('Patrimonio DEMO nulo');
  const sorted=[...items].sort((a,b)=>b.value-a.value);
@@ -129,9 +138,9 @@ function render(){
  document.getElementById('summary').innerHTML='<div class="card"><div class="eyebrow">Patrimonio ficticio</div><div class="value">'+money(total)+'</div><small>Referencias USD indicativas · sin rentabilidad inferida</small></div><div class="grid">'+[['Argentina',fmtp.format(argentina/total)],['Top 5',fmtp.format(top5/total)],['Cripto',fmtp.format(crypto/total)],['Posiciones',String(items.length)]].map(([n,v])=>'<div class="card"><div class="eyebrow">'+n+'</div><div class="value">'+v+'</div></div>').join('')+'</div>';
  document.getElementById('top').innerHTML=table(sorted.slice(0,12).map(x=>({name:x.ticker,value:x.value})));
  const totals=Object.fromEntries(TYPE_ORDER.map(x=>[x,0]));items.forEach(x=>{if(x.type in totals)totals[x.type]+=x.value});
- document.getElementById('typeSummary').innerHTML=TYPE_ORDER.map(t=>'<div class="flex"><strong style="color:'+TYPE_COLORS[t]+'">'+TYPE_NAMES[t]+'</strong><span>'+fmtp.format(totals[t]/total)+' · '+money(totals[t])+'</span></div><div class="bar"><div class="fill" style="background:'+TYPE_COLORS[t]+';width:'+Math.min(100,totals[t]/total*100)+'%"></div></div>').join('')+'<small>Cash no se grafica; sigue incluido en patrimonio y porcentajes.</small>';
- document.getElementById('regions').innerHTML='<h3>Regiones directas</h3>'+bars(group(items,'region'));
- document.getElementById('sectors').innerHTML='<h3>Sectores directos</h3>'+bars(group(items,'sector'));
+ document.getElementById('typeSummary').innerHTML='<div class="breakdown-list">'+TYPE_ORDER.map(t=>'<div class="breakdown-row"><div class="breakdown-head"><strong class="breakdown-name" style="color:'+TYPE_COLORS[t]+'">'+TYPE_NAMES[t]+'</strong><span class="breakdown-pct">'+fmtp.format(totals[t]/total)+'</span></div><div class="breakdown-usd">'+money(totals[t])+'</div><div class="bar"><div class="fill" style="background:'+TYPE_COLORS[t]+';width:'+Math.min(100,totals[t]/total*100)+'%"></div></div></div>').join('')+'</div><small>Participación del patrimonio total, incluido el efectivo. Cash no se grafica.</small>';
+ document.getElementById('regions').innerHTML='<h3>Regiones directas</h3><div class="breakdown-title">Participación sobre patrimonio total · sin descomposición interna de ETF</div>'+breakdownRows(group(items,'region'),'#79bff2');
+ document.getElementById('sectors').innerHTML='<h3>Sectores directos</h3><div class="breakdown-title">Clasificación directa de instrumentos · sin look-through</div>'+breakdownRows(group(items,'sector'),'#79bff2');
  const ac=ACCOUNTS.map(name=>({name,value:items.reduce((n,x)=>n+x.price*x.accounts.find(a=>a.name===name).quantity,0)}));
  document.getElementById('custodians').innerHTML=table(ac.sort((a,b)=>b.value-a.value));
  for(const [id,options] of [['typeFilter',[...new Set(items.map(x=>x.type))]],['accountFilter',ACCOUNTS]]){
