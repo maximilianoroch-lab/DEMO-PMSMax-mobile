@@ -12,3 +12,21 @@ test('the entire inline mobile script compiles',()=>{
 test('cash panel does not contain broken markup string',()=>{
  assert.ok(!html.includes("registrado.</div>'</div>'}"));
 });
+
+test('DEMO breakdowns are vertical and show the percentage before the USD detail',()=>{
+ assert.ok(html.includes('class="breakdown-list"'));
+ assert.ok(html.includes('class="breakdown-row"'));
+ assert.ok(html.includes('class="breakdown-pct"'));
+ assert.ok(html.includes('class="breakdown-usd"'));
+ assert.ok(!html.includes('<div class="grid"><div class="card" id="regions"'));
+ const start=html.indexOf("document.getElementById('typeSummary').innerHTML=");
+ const end=html.indexOf("document.getElementById('regions').innerHTML=",start);
+ assert.ok(start>=0&&end>start);
+ const block=html.slice(start,end);
+ assert.ok(block.indexOf('breakdown-pct')<block.indexOf('breakdown-usd'));
+});
+test('DEMO direct exposures explain ETF boundaries and isolate personal data',()=>{
+ assert.ok(html.includes('sin descomposición interna de ETF'));
+ assert.ok(html.includes('sin look-through'));
+ assert.ok(!html.includes('18qu9LXo55qQZq4oEAq42u_DKaI7e9lZL_PkfUZiu0T0'));
+});
