@@ -10,6 +10,8 @@ const assert=require('node:assert/strict');
  const errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.route('https://docs.google.com/**',route=>route.fulfill({status:200,body:csv,headers:{'content-type':'text/csv','access-control-allow-origin':'*'}}));
  await page.route('https://raw.githubusercontent.com/maximilianoroch-lab/Demo-PMS-Max/main/data/demo_daily_snapshots.csv',route=>route.fulfill({status:200,body:'Fecha,Patrimonio USD,Instrumentos,Estado\n2026-10-25,65000,65,INDICATIVO V5\n2026-10-26,65000,65,INDICATIVO V5',headers:{'access-control-allow-origin':'*'}}));
+ const daily=['Fecha,Ticker,Valor USD',...Array.from({length:20},(_,i)=>instruments.filter(t=>t!=='CASH').map((t,k)=>[new Date(Date.UTC(2025,3+i,15)).toISOString().slice(0,10),t,800+i*20+(k%5)*i*8].join(',')).join('\n'))].join('\n');
+ await page.route('https://raw.githubusercontent.com/maximilianoroch-lab/Demo-PMS-Max/main/data/demo_daily_assets.csv',route=>route.fulfill({status:200,body:daily,headers:{'content-type':'text/csv','access-control-allow-origin':'*'}}));
  await page.goto('file://'+process.cwd()+'/index.html',{waitUntil:'domcontentloaded'});
  await page.locator('#summary .value').first().waitFor({timeout:15000});
  await page.screenshot({path:'mobile-resumen.png',fullPage:true});
@@ -20,7 +22,18 @@ const assert=require('node:assert/strict');
  const classification=await page.evaluate(()=>({fxi:region('FXI'),spy:region('SPY'),ggal:region('GGAL'),meli:region('MELI'),tech:sector('AAPL'),energy:sector('YPFD'),bonds:sector('GD35')}));
  assert.deepEqual(classification,{fxi:'China',spy:'Estados Unidos',ggal:'Argentina',meli:'Latam ex-Argentina',tech:'Tecnología',energy:'Energía',bonds:'Bonos soberanos'});
  await page.locator('[data-page="diversificacion"]').click();
- assert.equal(await page.locator('#diversificacion.active').count(),1);await page.screenshot({path:'mobile-diversificacion.png',fullPage:true});
+ assert.equal(await page.locator('#diversificacion.active').count(),1);
+ for(const id of ['typeEvolution','typeShares']){
+ const chart=page.locator('#'+id);
+ await chart.locator('polyline').first().waitFor({timeout:15000});
+ assert.equal(await chart.locator('polyline').count(),5);
+ assert.equal(await chart.locator('.fixed-chart-axis text').count(),5);
+ const scroll=chart.locator('.fixed-axis-scroll');
+ await scroll.evaluate(e=>{e.scrollLeft=e.scrollWidth;});
+ const pos=await scroll.evaluate(e=>({left:e.scrollLeft,max:e.scrollWidth-e.clientWidth,axis:e.querySelector('.fixed-chart-axis').getBoundingClientRect().left,container:e.getBoundingClientRect().left}));
+ assert.ok(pos.max>0&&pos.left>=pos.max-2&&Math.abs(pos.axis-pos.container)<10,JSON.stringify(pos));
+ }
+ await page.screenshot({path:'mobile-diversificacion.png',fullPage:true});
  await page.locator('[data-page="posiciones"]').click();
  assert.match(await page.locator('#positionTable').innerText(),/AAPL/);
  await page.locator('[data-page="evolucion"]').click();
