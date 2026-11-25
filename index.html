@@ -30,10 +30,10 @@ a{color:#8fcfff}#status{font-size:12px}.pill{font-size:10px;border:1px solid var
 <main>
 <div class="warning">Cartera exclusivamente ficticia · cotizaciones USD indicativas, no verificadas. Sin escalado ni vínculo con posiciones reales.</div>
 <section class="page active" id="resumen"><button id="voiceSummaryBtn" type="button">Escuchar resumen</button><div class="card" id="voiceSummaryText" hidden aria-live="polite"></div><div id="summary"></div><h2>Composición por tipo · cinco grupos</h2><div class="card" id="typeSummary"></div><h2>Mayores posiciones</h2><div class="card scroll" id="top"></div></section>
-<section class="page" id="diversificacion"><h2>Exposición directa</h2><small>Los ETF se muestran como instrumentos completos; no se asignan componentes internos sin datos respaldados.</small><div><div class="card" id="regions"></div><div class="card" id="sectors"></div></div></section>
+<section class="page" id="diversificacion"><h2>Exposición directa</h2><small>Los ETF se muestran como instrumentos completos; no se asignan componentes internos sin datos respaldados.</small><div><div class="card" id="regions"></div><div class="card" id="sectors"></div></div><h2>Mix histórico por tipo (%)</h2><label>Temporalidad <select id="shareFrequency"><option value="W">Semanal</option><option value="M" selected>Mensual</option><option value="Q">Trimestral</option><option value="H">Semestral</option><option value="A">Anual</option></select></label><div class="card" id="typeShares"></div></section>
 <section class="page" id="custodia"><h2>Distribución por custodio</h2><div class="card" id="custodians"></div></section>
 <section class="page" id="posiciones"><h2>Posiciones por instrumento</h2><div class="filters"><select id="typeFilter"><option value="">Todos los tipos</option></select><select id="accountFilter"><option value="">Todas las cuentas</option></select></div><div class="card scroll" id="positionTable"></div></section>
-<section class="page" id="evolucion"><h2>Evolución observada</h2><div class="filters"><select id="historyPeriod" aria-label="Período observado"><option value="0">Todo</option><option value="7">1 semana</option><option value="31">1 mes</option><option value="92">3 meses</option><option value="183">6 meses</option><option value="366">1 año</option><option value="1096">3 años</option><option value="1827">5 años</option></select></div><div class="card" id="historyBox"><p class="muted">Sin historial verificado cargado.</p></div><h2>Evolución de los cinco tipos · USD</h2><div class="card" id="typeEvolution"><p class="muted">Cargando cierres ficticios independientes…</p></div><h2>Mayores variaciones de cotización · ARS</h2><small>Todos los activos DEMO con cierres válidos; precios unitarios en pesos, sin alterar valores patrimoniales en USD.</small><div class="card"><h3>Top 10 subas</h3><div id="topRises" aria-live="polite">Cargando cotizaciones…</div></div><div class="card"><h3>Top 10 bajas</h3><div id="topFalls" aria-live="polite">Cargando cotizaciones…</div></div><small id="moversDate"></small><small>Los snapshots representan patrimonio observado, no rentabilidad. Nunca se crean cierres artificiales.</small></section>
+<section class="page" id="evolucion"><h2>Evolución observada</h2><div class="filters"><select id="historyPeriod" aria-label="Período observado"><option value="0">Todo</option><option value="-7">Cierres semanales</option><option value="7">1 semana</option><option value="31">1 mes</option><option value="92">3 meses</option><option value="183">6 meses</option><option value="366">1 año</option><option value="1096">3 años</option><option value="1827">5 años</option></select></div><div class="card" id="historyBox"><p class="muted">Sin historial verificado cargado.</p></div><h2>Evolución de los cinco tipos · USD</h2><label>Temporalidad <select id="typeFrequency"><option value="W">Semanal</option><option value="M" selected>Mensual</option><option value="Q">Trimestral</option><option value="H">Semestral</option><option value="A">Anual</option></select></label><div class="card" id="typeEvolution"><p class="muted">Cargando cierres ficticios independientes…</p></div><h2>Mayores variaciones de cotización · ARS</h2><small>Todos los activos DEMO con cierres válidos; precios unitarios en pesos, sin alterar valores patrimoniales en USD.</small><div class="card"><h3>Top 10 subas</h3><div id="topRises" aria-live="polite">Cargando cotizaciones…</div></div><div class="card"><h3>Top 10 bajas</h3><div id="topFalls" aria-live="polite">Cargando cotizaciones…</div></div><small id="moversDate"></small><small>Los snapshots representan patrimonio observado, no rentabilidad. Nunca se crean cierres artificiales.</small></section>
 <section class="page" id="herramientas"><h2>Herramientas</h2>
 <div class="card"><h3>Comparar posiciones</h3><div class="filters"><select id="compareA" aria-label="Activo A"></select><select id="compareB" aria-label="Activo B"></select></div><div id="compareResult" aria-live="polite"></div><small>Comparación patrimonial ficticia; no incluye cotizaciones de mercado verificadas.</small></div>
 <div class="card"><h3>Simulador de operaciones</h3><div class="filters"><select id="simTicker" aria-label="Activo"></select><select id="simOperation" aria-label="Operación"><option>Comprar</option><option>Vender</option></select></div><div class="filters"><input id="simAmount" type="number" inputmode="decimal" min="0" step="100" placeholder="Monto USD" aria-label="Monto USD" style="flex:1;min-width:0;background:#12263b;color:#fff;border:1px solid #345675;border-radius:12px;padding:10px"></div><div class="filters"><select id="simFunding" aria-label="Origen de fondos"></select><select id="simSource" aria-label="Activo de origen"></select></div><div class="filters"><input id="simCashUsed" type="number" inputmode="decimal" min="0" step="100" placeholder="CASH utilizado (si combinado)" aria-label="CASH utilizado" style="flex:1;min-width:0;background:#12263b;color:#fff;border:1px solid #345675;border-radius:12px;padding:10px"></div><button id="simulateBtn">Simular (no opera)</button><div id="simResult" aria-live="polite"></div><small>Sin comisiones ni deslizamiento; no altera la base DEMO V5.</small></div>
@@ -360,12 +360,14 @@ async function loadDemoTypeHistory(){
    byDate.get(date)[type]+=value;
   }
   const orderedDates=[...byDate.keys()].sort();
-  const dates=orderedDates.filter((date,i)=>{
+  const distinctDates=orderedDates.filter((date,i)=>{
    if(i===0)return true;
    const previous=byDate.get(orderedDates[i-1]),current=byDate.get(date);
    return TYPE_ORDER.some(t=>Math.abs(current[t]-previous[t])>0.000001);
   });
-  if(dates.length<2){el.innerHTML='<p class="muted">Todavía no hay dos valuaciones distintas por tipo: las fotos DEMO V5 almacenadas son idénticas. No se dibujan curvas de mercado artificiales.</p>';return;}
+  if(distinctDates.length<2){document.getElementById('typeShares').textContent='Sin dos valuaciones distintas disponibles.';el.innerHTML='<p class="muted">Todavía no hay dos valuaciones distintas por tipo: las fotos DEMO V5 almacenadas son idénticas. No se dibujan curvas de mercado artificiales.</p>';return;}
+  const mode=document.getElementById('typeFrequency').value,dates=bucketDemoDates(orderedDates,mode);
+  if(dates.length<2){el.textContent='Sin dos períodos disponibles.';}else{
   const maxValue=Math.max(...dates.flatMap(date=>TYPE_ORDER.map(t=>byDate.get(date)[t])));
   const max=Math.max(90000,Math.ceil(maxValue/50000)*50000);
   const W=Math.max(600,dates.length*30),H=255,l=62,r=14,t=16,b=37;
@@ -377,11 +379,13 @@ async function loadDemoTypeHistory(){
   el.innerHTML='<div class="scroll"><svg viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;max-width:none;height:auto" role="img" aria-label="Cinco curvas de activos DEMO en USD">'+grid+paths+labels+'</svg></div>'+legend+'<small>Escala: 0–US$ '+fmt.format(max)+' · '+dates.length+' cierres indicativos DEMO. No son rendimientos. Cash excluido de curvas, incluido en patrimonio total.</small>';
  }catch(e){el.textContent='No hay histórico independiente de los cinco tipos: '+e.message;}
 }
+function bucketDemoDates(dates,mode){const m=new Map();for(const date of dates){const d=new Date(date+'T12:00:00Z'),y=d.getUTCFullYear(),mo=d.getUTCMonth()+1;let key;if(mode==='W'){d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);key=d.toISOString().slice(0,10);}else key=mode==='A'?String(y):mode==='H'?y+'-'+Math.ceil(mo/6):mode==='Q'?y+'-'+Math.ceil(mo/3):date.slice(0,7);m.set(key,date);}return [...m.values()];}
 function renderHistory(){
  const box=document.getElementById('historyBox');
  const period=Number(document.getElementById('historyPeriod').value);
  const latest=history.length?new Date(history[history.length-1].date+'T12:00:00'):null;
- const visible=period&&latest?history.filter(r=>(latest-new Date(r.date+'T12:00:00'))/86400000<=period):history;
+ const weekly=period===-7?new Set(bucketDemoDates(history.map(r=>r.date),'W')):null;
+ const visible=weekly?history.filter(r=>weekly.has(r.date)):period&&latest?history.filter(r=>(latest-new Date(r.date+'T12:00:00'))/86400000<=period):history;
  if(!visible.length){box.innerHTML='<p class="muted">Sin cierres independientes verificables para mostrar.</p>';return;}
  const rows=[...visible].reverse().map((r,i)=>'<tr><td>'+escapeHTML(r.date)+'</td><td class="num">'+money(r.value)+'</td></tr>').join('');
  box.innerHTML='<h3>Observaciones con cambio · '+visible.length+'</h3><div class="scroll"><table><thead><tr><th>Fecha</th><th class="num">Patrimonio USD</th></tr></thead><tbody>'+rows+'</tbody></table></div><small>Solo fechas con valuación distinta respecto de la anterior; archivo DEMO preservado. No es rentabilidad ni cierre de mercado.</small>';
@@ -398,6 +402,7 @@ async function loadHistory(){
  }catch(e){history=[]}
  renderHistory();
 }
+for(const id of ['typeFrequency','shareFrequency'])document.getElementById(id).addEventListener('change',loadDemoTypeHistory);
 document.getElementById('historyPeriod').addEventListener('change',renderHistory);
 document.getElementById('refresh').addEventListener('click',load);
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
