@@ -24,8 +24,9 @@ const assert=require('node:assert/strict');
  await page.locator('[data-page="diversificacion"]').click();
  assert.equal(await page.locator('#diversificacion.active').count(),1);
  for(const id of ['typeEvolution','typeShares']){
+ await page.locator('[data-page="'+(id==='typeEvolution'?'evolucion':'diversificacion')+'"]').click();
  const chart=page.locator('#'+id);
- await chart.locator('polyline').first().waitFor({timeout:15000});
+ await chart.locator('polyline').first().waitFor({timeout:15000}).catch(async e=>{throw Error(id+': '+await chart.innerText()+'; '+e.message)});
  assert.equal(await chart.locator('polyline').count(),5);
  assert.equal(await chart.locator('.fixed-chart-axis text').count(),5);
  const scroll=chart.locator('.fixed-axis-scroll');
