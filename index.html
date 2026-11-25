@@ -55,7 +55,7 @@ const US=new Set('AAPL AMD AMZN AVGO BRKB DISN GLOB GOOGL HD JNJ JPM KO LLY LAC 
 const VALID=new Set([...ETF,...ARG,...BONDS,...CRYPTO,...US,'CASH']);
 const TYPE_ORDER=['Cripto','ETF','Cedear','Bono','Acción AR'];
 const TYPE_NAMES={'Cripto':'Cripto','ETF':'ETF','Cedear':'CEDEAR','Bono':'Bonos','Acción AR':'Acciones'};
-const TYPE_COLORS={'Cripto':'#d71920','ETF':'#ffc000','Cedear':'#80c342','Bono':'#4472c4','Acción AR':'#a0b4c8'};
+const TYPE_COLORS={'Cripto':'#ff626a','ETF':'#ffc000','Cedear':'#80c342','Bono':'#6095ed','Acción AR':'#a0b4c8'};
 const fmt=new Intl.NumberFormat('es-AR',{maximumFractionDigits:0});
 const fmtp=new Intl.NumberFormat('es-AR',{style:'percent',maximumFractionDigits:1,minimumFractionDigits:1});
 const money=n=>'US$ '+fmt.format(n);
@@ -127,7 +127,7 @@ function breakdownRows(rows,color='#79bff2',showUSD=false){
   const share=total>0?r.value/total:0;
   return '<div class="breakdown-row"><div class="breakdown-head"><strong class="breakdown-name" >'+escapeHTML(r.name)+'</strong><span class="breakdown-pct">'+fmtp.format(share)+'</span></div>'+
    (showUSD?'<div class="breakdown-usd">'+money(r.value)+'</div>':'')+
-   '<div class="bar"><div class="fill" style="width:'+Math.min(100,Math.max(0,100*share))+'%;background:#42698e"></div></div></div>';
+   '<div class="bar"><div class="fill" style="width:'+Math.min(100,Math.max(0,100*share))+'%;background:#79a9d2"></div></div></div>';
  }).join('')+'</div>';
 }
 function bars(rows){return breakdownRows(rows)}
