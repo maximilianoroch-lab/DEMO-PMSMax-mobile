@@ -377,7 +377,17 @@ async function loadDemoTypeHistory(){
   const paths=TYPE_ORDER.map(t=>'<polyline fill="none" stroke="'+TYPE_COLORS[t]+'" stroke-width="3" stroke-linejoin="round" points="'+dates.map((date,i)=>x(i)+','+y(byDate.get(date)[t])).join(' ')+'"><title>'+TYPE_NAMES[t]+'</title></polyline>').join('');
   const legend='<div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;margin:8px 0">'+TYPE_ORDER.map(t=>'<span style="color:'+TYPE_COLORS[t]+'">● '+TYPE_NAMES[t]+'</span>').join('')+'</div>';
   el.innerHTML='<div class="scroll"><svg viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;max-width:none;height:auto" role="img" aria-label="Cinco curvas de activos DEMO en USD">'+grid+paths+labels+'</svg></div>'+legend+'<small>Escala: 0–US$ '+fmt.format(max)+' · '+dates.length+' cierres indicativos DEMO. No son rendimientos. Cash excluido de curvas, incluido en patrimonio total.</small>';
- }catch(e){el.textContent='No hay histórico independiente de los cinco tipos: '+e.message;}
+  const sc=el.querySelector('.scroll');if(sc)requestAnimationFrame(()=>{sc.scrollLeft=sc.scrollWidth;});
+  }
+  const shares=document.getElementById('typeShares'),sd=bucketDemoDates(orderedDates,document.getElementById('shareFrequency').value);
+  if(sd.length<2){shares.textContent='Sin dos períodos disponibles.';return;}
+  const W=Math.max(430,sd.length*36),H=220,X=i=>42+(W-56)*i/(sd.length-1),Y=v=>H-30-v*1.7;
+  const points=TYPE_ORDER.map(t=>'<polyline fill="none" stroke="'+TYPE_COLORS[t]+'" stroke-width="3" points="'+sd.map((date,i)=>{const values=byDate.get(date),total=TYPE_ORDER.reduce((a,k)=>a+values[k],0);return X(i)+','+Y(total?100*values[t]/total:0)}).join(' ')+'"><title>'+TYPE_NAMES[t]+'</title></polyline>').join('');
+  const grid=[0,25,50,75,100].map(v=>'<line x1="42" x2="'+(W-14)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="#28445c"/><text x="38" y="'+(Y(v)+4)+'" text-anchor="end" fill="#aec0d2" font-size="10">'+v+'%</text>').join('');
+  const labels=sd.map((d,i)=>i%Math.max(1,Math.ceil(sd.length/7))===0||i===sd.length-1?'<text x="'+X(i)+'" y="210" text-anchor="middle" fill="#aec0d2" font-size="10">'+d.slice(5)+'</text>':'').join('');
+  shares.innerHTML='<div class="scroll"><svg viewBox="0 0 '+W+' '+H+'" style="width:'+W+'px;max-width:none" role="img" aria-label="Mix por tipo">'+grid+points+labels+'</svg></div><small>'+TYPE_ORDER.map(t=>'<span style="color:'+TYPE_COLORS[t]+'">● '+TYPE_NAMES[t]+'</span>').join(' · ')+' · Sin efectivo. Último registro disponible de cada período.</small>';
+  const sc2=shares.querySelector('.scroll');if(sc2)requestAnimationFrame(()=>{sc2.scrollLeft=sc2.scrollWidth;});
+ }catch(e){document.getElementById('typeShares').textContent='Histórico independiente no disponible.';el.textContent='No hay histórico independiente de los cinco tipos: '+e.message;}
 }
 function bucketDemoDates(dates,mode){const m=new Map();for(const date of dates){const d=new Date(date+'T12:00:00Z'),y=d.getUTCFullYear(),mo=d.getUTCMonth()+1;let key;if(mode==='W'){d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);key=d.toISOString().slice(0,10);}else key=mode==='A'?String(y):mode==='H'?y+'-'+Math.ceil(mo/6):mode==='Q'?y+'-'+Math.ceil(mo/3):date.slice(0,7);m.set(key,date);}return [...m.values()];}
 function renderHistory(){
@@ -388,7 +398,7 @@ function renderHistory(){
  const visible=weekly?history.filter(r=>weekly.has(r.date)):period&&latest?history.filter(r=>(latest-new Date(r.date+'T12:00:00'))/86400000<=period):history;
  if(!visible.length){box.innerHTML='<p class="muted">Sin cierres independientes verificables para mostrar.</p>';return;}
  const rows=[...visible].reverse().map((r,i)=>'<tr><td>'+escapeHTML(r.date)+'</td><td class="num">'+money(r.value)+'</td></tr>').join('');
- box.innerHTML='<h3>Observaciones con cambio · '+visible.length+'</h3><div class="scroll"><table><thead><tr><th>Fecha</th><th class="num">Patrimonio USD</th></tr></thead><tbody>'+rows+'</tbody></table></div><small>Solo fechas con valuación distinta respecto de la anterior; archivo DEMO preservado. No es rentabilidad ni cierre de mercado.</small>';
+ box.innerHTML='<h3>Observaciones · '+visible.length+'</h3><div class="scroll"><table><thead><tr><th>Fecha</th><th class="num">Patrimonio USD</th></tr></thead><tbody>'+rows+'</tbody></table></div><small>Últimos registros disponibles; archivo DEMO preservado. No es rentabilidad ni cierre de mercado.</small>';
 }
 async function loadHistory(){
  try{
@@ -398,7 +408,7 @@ async function loadHistory(){
     .filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&Number.isFinite(x.value)&&x.value>0&&x.estado==='INDICATIVO V5');
   const map=new Map(rows.map(x=>[x.date,x]));
   const ordered=[...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
-  history=ordered.filter((x,i)=>i===0||Math.abs(x.value-ordered[i-1].value)>0.000001);
+  history=ordered;
  }catch(e){history=[]}
  renderHistory();
 }
