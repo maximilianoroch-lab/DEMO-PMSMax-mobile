@@ -23,7 +23,7 @@ test('DEMO breakdowns are vertical and show the percentage before the USD detail
  const end=html.indexOf("document.getElementById('regions').innerHTML=",start);
  assert.ok(start>=0&&end>start);
  const block=html.slice(start,end);
- assert.ok(block.indexOf('breakdown-pct')<block.indexOf('breakdown-usd'));
+ assert.ok(block.includes('fmtp.format(totals[t]/total)'));assert.ok(block.includes('money(totals[t])'));assert.ok(block.indexOf('fmtp.format(totals[t]/total)')<block.indexOf('money(totals[t])'));assert.ok(block.indexOf('money(totals[t])')<block.indexOf('class="bar"'));
 });
 test('DEMO direct exposures explain ETF boundaries and isolate personal data',()=>{
  assert.ok(html.includes('sin descomposición interna de ETF'));
