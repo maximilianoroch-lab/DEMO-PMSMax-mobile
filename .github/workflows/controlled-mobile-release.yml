@@ -9,12 +9,12 @@ on:
         default: prepare
       expected_sha:
         description: Full approved commit SHA
-        default: 4b5728aa7e6ec1c5a96cc564190d43ca9638f541
+        default: 57e245ec4095619ec4a9919472261c8648c39640
         required: true
         type: string
       approval:
         description: PUBLICAR site-name full-SHA (publication only)
-        default: PUBLICAR demo-pmsmax-mobile 4b5728aa7e6ec1c5a96cc564190d43ca9638f541
+        default: PUBLICAR demo-pmsmax-mobile 57e245ec4095619ec4a9919472261c8648c39640
         type: string
       credits_available:
         description: Current available credits, verified by Max (publication only)
