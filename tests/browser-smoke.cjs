@@ -22,6 +22,8 @@ const assert=require('node:assert/strict');
  await page.locator('[data-page="posiciones"]').click();
  assert.match(await page.locator('#positionTable').innerText(),/AAPL/);
  await page.locator('[data-page="evolucion"]').click();
+ assert.equal(await page.locator('#historyPeriod').inputValue(),'-7');
+ await page.locator('#historyPeriod').selectOption('0');
  await page.locator('#historyBox').getByText('Observaciones', {exact:false}).waitFor({timeout:10000});
  assert.match(await page.locator('#historyBox').innerText(),/Observaciones · 2/);
  assert.match(await page.locator('#historyBox').innerText(),/2026-10-26/);
